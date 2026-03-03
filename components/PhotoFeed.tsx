@@ -20,15 +20,27 @@ const PhotoFeed = () => {
             <Row gutter={[24, 24]}>
                 {[...Array(6)].map((_, i) => (
                     <Col key={i} xs={24} sm={12} lg={8}>
-                        <Card style={{ height: 420 }}>
-                            <Skeleton.Image
-                                active
-                                style={{ width: "100%", height: 300 }}
-                            />
+                        <Card
+                            style={{ height: 420 }}
+                            styles={{ body: { padding: 16 } }}
+                            cover={
+                                <div style={{
+                                    aspectRatio: "1 / 1",
+                                    width: "100%",
+                                    background: "#f5f5f5",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    borderBottom: "1px solid #f0f0f0"
+                                }}>
+                                    <PictureOutlined style={{ fontSize: 48, color: "#d9d9d9" }} />
+                                </div>
+                            }
+                        >
                             <Skeleton
                                 active
                                 paragraph={{ rows: 2 }}
-                                style={{ marginTop: 16 }}
+                                style={{ marginTop: 0 }}
                             />
                         </Card>
                     </Col>

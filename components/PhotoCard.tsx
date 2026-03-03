@@ -1,7 +1,7 @@
 "use client";
 
-import { Card, Image, Typography, Space } from "antd";
-import { CommentOutlined } from "@ant-design/icons";
+import { Card, Image, Typography, Space, Skeleton } from "antd";
+import { CommentOutlined, PictureOutlined } from "@ant-design/icons";
 import { type Post } from "@/context/MainPageContext";
 import { formatDistanceToNow } from "date-fns";
 
@@ -31,7 +31,7 @@ const PhotoCard = ({ post, onClick, index }: PhotoCardProps) => {
                 style={{ height: 420, display: "flex", flexDirection: "column", overflow: "hidden" }}
                 cover={
                     coverPhoto ? (
-                        <div style={{ aspectRatio: "1 / 1", width: "100%", overflow: "hidden" }}>
+                        <div style={{ aspectRatio: "1 / 1", width: "100%", overflow: "hidden", background: "#f5f5f5" }}>
                             <Image
                                 src={coverPhoto.url}
                                 alt={post.caption || "Post photo"}
@@ -40,6 +40,20 @@ const PhotoCard = ({ post, onClick, index }: PhotoCardProps) => {
                                 style={{ objectFit: "cover" }}
                                 loading="lazy"
                                 preview={false}
+                                placeholder={
+                                    <div style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        background: "#f5f5f5"
+                                    }}>
+                                        <Skeleton.Node active style={{ width: "100%", height: "100%" }}>
+                                            <PictureOutlined style={{ fontSize: 32, color: "#d9d9d9" }} />
+                                        </Skeleton.Node>
+                                    </div>
+                                }
                             />
                         </div>
                     ) : (
