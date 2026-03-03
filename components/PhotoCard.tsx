@@ -28,9 +28,10 @@ const PhotoCard = ({ post, onClick, index }: PhotoCardProps) => {
             <Card
                 hoverable
                 onClick={onClick}
+                style={{ height: 420, display: "flex", flexDirection: "column", overflow: "hidden" }}
                 cover={
                     coverPhoto ? (
-                        <div style={{ aspectRatio: "1 / 1", overflow: "hidden" }}>
+                        <div style={{ aspectRatio: "1 / 1", width: "100%", overflow: "hidden" }}>
                             <Image
                                 src={coverPhoto.url}
                                 alt={post.caption || "Post photo"}
@@ -45,6 +46,7 @@ const PhotoCard = ({ post, onClick, index }: PhotoCardProps) => {
                         <div
                             style={{
                                 aspectRatio: "1 / 1",
+                                width: "100%",
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -58,7 +60,7 @@ const PhotoCard = ({ post, onClick, index }: PhotoCardProps) => {
                     )
                 }
                 styles={{
-                    body: { padding: 16 },
+                    body: { padding: 16, flex: 1, display: "flex", flexDirection: "column" },
                 }}
             >
                 {post.caption && (
@@ -70,43 +72,51 @@ const PhotoCard = ({ post, onClick, index }: PhotoCardProps) => {
                     </Text>
                 )}
 
-                <div
-                    style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                    }}
-                >
-                    <Space size={4}>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                            {post.author.name || "Anonymous"}
-                        </Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                            ·
-                        </Text>
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                            {formatDistanceToNow(new Date(post.createdAt), {
-                                addSuffix: true,
-                            })}
-                        </Text>
-                    </Space>
-
-                    <Space size={4}>
-                        <CommentOutlined
-                            style={{ fontSize: 14, color: "#8c8c8c" }}
-                        />
-                        <Text type="secondary">{post._count.comments}</Text>
-                    </Space>
-                </div>
-
-                {post.photos.length > 1 && (
-                    <Text
-                        type="secondary"
-                        style={{ fontSize: 12, marginTop: 4, display: "block" }}
+                <div style={{ marginTop: "auto" }}>
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                        }}
                     >
-                        {post.photos.length} photos
-                    </Text>
-                )}
+                        <Space size={4} style={{ overflow: "hidden" }}>
+                            <Text
+                                type="secondary"
+                                style={{ fontSize: 12 }}
+                                ellipsis
+                            >
+                                {post.author.name || "Anonymous"}
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                                ·
+                            </Text>
+                            <Text type="secondary" style={{ fontSize: 12, whiteSpace: "nowrap" }}>
+                                {formatDistanceToNow(new Date(post.createdAt), {
+                                    addSuffix: true,
+                                })}
+                            </Text>
+                        </Space>
+
+                        <Space size={4} style={{ flexShrink: 0 }}>
+                            <CommentOutlined
+                                style={{ fontSize: 14, color: "#8c8c8c" }}
+                            />
+                            <Text type="secondary">{post._count.comments}</Text>
+                        </Space>
+                    </div>
+
+                    <div style={{ height: 20 }}>
+                        {post.photos.length > 1 && (
+                            <Text
+                                type="secondary"
+                                style={{ fontSize: 12, marginTop: 4, display: "block" }}
+                            >
+                                {post.photos.length} photos
+                            </Text>
+                        )}
+                    </div>
+                </div>
             </Card>
         </div>
     );
