@@ -1,6 +1,15 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from "react";
+import { useAuth } from "./AuthContext";
+
+// ─── Types ───────────────────────────────────────────────────────
 
 interface Author {
     id: string;
@@ -51,6 +60,7 @@ interface Pagination {
 }
 
 interface MainPageContextType {
+    // Posts
     posts: Post[];
     loading: boolean;
     error: string | null;
@@ -59,15 +69,43 @@ interface MainPageContextType {
     loadMore: () => Promise<void>;
     refreshPosts: () => Promise<void>;
     hasMore: boolean;
+
+    // Selected post overlay
+    selectedPost: Post | null;
+    selectPost: (postId: string) => void;
+    clearSelectedPost: () => void;
+
+    // Comments
+    addComment: (postId: string, content: string) => Promise<boolean>;
+    commentSubmitting: boolean;
 }
+
+// ─── Context ─────────────────────────────────────────────────────
 
 const MainPageContext = createContext<MainPageContextType | null>(null);
 
-export function MainPageProvider({ children }: { children: React.ReactNode }) {
+// ─── Provider ────────────────────────────────────────────────────
+
+export function MainPageProvider({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    const { user } = useAuth();
+
     const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [pagination, setPagination] = useState<Pagination | null>(null);
+
+    // Selected post overlay
+    const [selectedId, setSelectedId] = useState<string | null>(null);
+    const selectedPost = posts.find((p) => p.id === selectedId) || null;
+
+    // Comment
+    const [commentSubmitting, setCommentSubmitting] = useState(false);
+
+    // ── Fetch posts ──────────────────────────────────────────────
 
     const fetchPosts = useCallback(async (page: number = 1) => {
         try {
@@ -90,7 +128,9 @@ export function MainPageProvider({ children }: { children: React.ReactNode }) {
 
             setPagination(json.pagination);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Something went wrong");
+            setError(
+                err instanceof Error ? err.message : "Something went wrong"
+            );
         } finally {
             setLoading(false);
         }
@@ -106,7 +146,54 @@ export function MainPageProvider({ children }: { children: React.ReactNode }) {
         await fetchPosts(1);
     }, [fetchPosts]);
 
-    const hasMore = pagination ? pagination.page < pagination.totalPages : false;
+    const hasMore = pagination
+        ? pagination.page < pagination.totalPages
+        : false;
+
+    // ── Selected post ────────────────────────────────────────────
+
+    const selectPost = useCallback((postId: string) => {
+        setSelectedId(postId);
+    }, []);
+
+    const clearSelectedPost = useCallback(() => {
+        setSelectedId(null);
+    }, []);
+
+    // ── Add comment ──────────────────────────────────────────────
+
+    const addComment = useCallback(
+        async (postId: string, content: string): Promise<boolean> => {
+            if (!content.trim() || !user) return false;
+
+            setCommentSubmitting(true);
+            try {
+                const res = await fetch(`/api/post/${postId}/comment`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        content: content.trim(),
+                        authorId: user.id,
+                    }),
+                });
+
+                if (!res.ok) {
+                    throw new Error("Failed to add comment");
+                }
+
+                // Refresh posts to get the new comment
+                await refreshPosts();
+                return true;
+            } catch {
+                throw new Error("Couldn't post comment.");
+            } finally {
+                setCommentSubmitting(false);
+            }
+        },
+        [user, refreshPosts]
+    );
+
+    // ── Initial fetch ────────────────────────────────────────────
 
     useEffect(() => {
         fetchPosts(1);
@@ -123,12 +210,19 @@ export function MainPageProvider({ children }: { children: React.ReactNode }) {
                 loadMore,
                 refreshPosts,
                 hasMore,
+                selectedPost,
+                selectPost,
+                clearSelectedPost,
+                addComment,
+                commentSubmitting,
             }}
         >
             {children}
         </MainPageContext.Provider>
     );
 }
+
+// ─── Hook ────────────────────────────────────────────────────────
 
 export function useMainPage() {
     const context = useContext(MainPageContext);

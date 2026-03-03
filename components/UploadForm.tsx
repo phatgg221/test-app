@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import {
-    Upload,
     Button,
     Input,
     Modal,
@@ -20,108 +18,64 @@ import {
     UserOutlined,
     SendOutlined,
 } from "@ant-design/icons";
-import type { UploadFile } from "antd";
 import { useAuth } from "@/context/AuthContext";
+import { useCreatePost } from "@/context/CreatePostContext";
 
 const { TextArea } = Input;
 const { Text, Title } = Typography;
 
-interface UploadFormProps {
-    onUploadSuccess: () => void;
-}
-
-const UploadForm = ({ onUploadSuccess }: UploadFormProps) => {
+const UploadForm = () => {
     const { user, isAuthenticated } = useAuth();
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [fileList, setFileList] = useState<UploadFile[]>([]);
-    const [caption, setCaption] = useState("");
-    const [submitting, setSubmitting] = useState(false);
-    const [showUploadArea, setShowUploadArea] = useState(false);
+    const {
+        isModalOpen,
+        openModal,
+        closeModal,
+        caption,
+        setCaption,
+        fileList,
+        addFiles,
+        removeFile,
+        showUploadArea,
+        setShowUploadArea,
+        submitting,
+        canPost,
+        submitPost,
+    } = useCreatePost();
 
-    const openModal = () => {
+    const handleOpenModal = () => {
+        if (!openModal()) {
+            message.info("Please log in to create a post.");
+        }
+    };
+
+    const handleOpenWithPhotos = () => {
         if (!isAuthenticated) {
             message.info("Please log in to create a post.");
             return;
         }
-        setIsModalOpen(true);
-    };
-
-    const closeModal = () => {
-        if (submitting) return;
-        setIsModalOpen(false);
-        setFileList([]);
-        setCaption("");
-        setShowUploadArea(false);
+        setShowUploadArea(true);
+        openModal();
     };
 
     const handleSubmit = async () => {
-        if (fileList.length === 0 && !caption.trim()) {
-            message.warning("Add a photo or write something.");
-            return;
-        }
-
-        if (!user) {
-            message.error("Please log in first.");
-            return;
-        }
-
-        setSubmitting(true);
-
         try {
-            let photoUrls: string[] = [];
-
-            // Step 1: Upload files to S3 if any
-            if (fileList.length > 0) {
-                const formData = new FormData();
-                fileList.forEach((file) => {
-                    if (file.originFileObj) {
-                        formData.append("files", file.originFileObj);
-                    }
-                });
-
-                const uploadRes = await fetch("/api/post/upload", {
-                    method: "POST",
-                    body: formData,
-                });
-
-                if (!uploadRes.ok) {
-                    const err = await uploadRes.json();
-                    throw new Error(err.error || "Upload failed");
-                }
-
-                const uploadJson = await uploadRes.json();
-                photoUrls = uploadJson.data.urls;
+            const success = await submitPost();
+            if (success) {
+                message.success("Post created!");
             }
-
-            // Step 2: Create post
-            const postRes = await fetch("/api/post", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    authorId: user.id,
-                    caption: caption.trim() || undefined,
-                    photos: photoUrls.map((url, idx) => ({ url, order: idx })),
-                }),
-            });
-
-            if (!postRes.ok) {
-                const err = await postRes.json();
-                throw new Error(err.error || "Failed to create post");
-            }
-
-            message.success("Post created!");
-            closeModal();
-            onUploadSuccess();
         } catch (err) {
             message.error(
                 err instanceof Error ? err.message : "Something went wrong"
             );
-        } finally {
-            setSubmitting(false);
         }
     };
 
-    const canPost = caption.trim().length > 0 || fileList.length > 0;
+    const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+        addFiles(Array.from(files));
+        e.target.value = "";
+    };
 
     return (
         <>
@@ -155,7 +109,7 @@ const UploadForm = ({ onUploadSuccess }: UploadFormProps) => {
                     />
 
                     <div
-                        onClick={openModal}
+                        onClick={handleOpenModal}
                         style={{
                             flex: 1,
                             background: "#f0f2f5",
@@ -181,12 +135,7 @@ const UploadForm = ({ onUploadSuccess }: UploadFormProps) => {
 
                 <Divider style={{ margin: "12px 0 8px" }} />
 
-                <div
-                    style={{
-                        display: "flex",
-                        justifyContent: "center",
-                    }}
-                >
+                <div style={{ display: "flex", justifyContent: "center" }}>
                     <Tooltip title="Photo">
                         <Button
                             type="text"
@@ -195,16 +144,7 @@ const UploadForm = ({ onUploadSuccess }: UploadFormProps) => {
                                     style={{ color: "#45bd62", fontSize: 20 }}
                                 />
                             }
-                            onClick={() => {
-                                if (!isAuthenticated) {
-                                    message.info(
-                                        "Please log in to create a post."
-                                    );
-                                    return;
-                                }
-                                setShowUploadArea(true);
-                                openModal();
-                            }}
+                            onClick={handleOpenWithPhotos}
                             style={{
                                 fontWeight: 600,
                                 color: "#65676b",
@@ -312,47 +252,138 @@ const UploadForm = ({ onUploadSuccess }: UploadFormProps) => {
                             position: "relative",
                         }}
                     >
-                        {!fileList.length && (
-                            <Button
-                                type="text"
-                                size="small"
-                                icon={<CloseOutlined />}
-                                onClick={() => {
-                                    setShowUploadArea(false);
-                                    setFileList([]);
-                                }}
-                                style={{
-                                    position: "absolute",
-                                    top: 8,
-                                    right: 8,
-                                    zIndex: 2,
-                                    background: "#fff",
-                                    borderRadius: "50%",
-                                    boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
-                                }}
-                            />
-                        )}
+                        <Button
+                            type="text"
+                            size="small"
+                            icon={<CloseOutlined />}
+                            onClick={() => {
+                                setShowUploadArea(false);
+                            }}
+                            style={{
+                                position: "absolute",
+                                top: 8,
+                                right: 8,
+                                zIndex: 2,
+                                background: "#fff",
+                                borderRadius: "50%",
+                                boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+                            }}
+                        />
 
-                        <Upload
-                            listType="picture-card"
-                            fileList={fileList}
-                            onChange={({ fileList: newFileList }) =>
-                                setFileList(newFileList)
-                            }
-                            beforeUpload={() => false}
+                        <input
+                            type="file"
+                            id="photo-upload-input"
                             accept="image/jpeg,image/png,image/webp,image/gif"
                             multiple
-                            maxCount={10}
+                            style={{ display: "none" }}
+                            onChange={handleFilesSelected}
+                        />
+
+                        <div
+                            style={{
+                                display: "flex",
+                                gap: 8,
+                                overflowX: "auto",
+                                overflowY: "hidden",
+                                padding: "4px 0",
+                                scrollbarWidth: "thin",
+                            }}
                         >
+                            {fileList.map((file, idx) => (
+                                <div
+                                    key={file.uid}
+                                    style={{
+                                        position: "relative",
+                                        flexShrink: 0,
+                                        width: 100,
+                                        height: 100,
+                                        borderRadius: 8,
+                                        overflow: "hidden",
+                                        border: "1px solid #e4e6e9",
+                                    }}
+                                >
+                                    <img
+                                        src={
+                                            file.url ||
+                                            (file.originFileObj
+                                                ? URL.createObjectURL(
+                                                    file.originFileObj as File
+                                                )
+                                                : "")
+                                        }
+                                        alt={file.name}
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "cover",
+                                        }}
+                                    />
+                                    <Button
+                                        type="text"
+                                        size="small"
+                                        icon={
+                                            <CloseOutlined
+                                                style={{ fontSize: 10 }}
+                                            />
+                                        }
+                                        onClick={() => removeFile(idx)}
+                                        style={{
+                                            position: "absolute",
+                                            top: 4,
+                                            right: 4,
+                                            width: 20,
+                                            height: 20,
+                                            minWidth: 20,
+                                            padding: 0,
+                                            background: "rgba(0,0,0,0.5)",
+                                            color: "#fff",
+                                            borderRadius: "50%",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                        }}
+                                    />
+                                </div>
+                            ))}
+
                             {fileList.length < 10 && (
-                                <div>
-                                    <PlusOutlined />
-                                    <div style={{ marginTop: 8, fontSize: 12 }}>
-                                        Add photos
-                                    </div>
+                                <div
+                                    onClick={() =>
+                                        document
+                                            .getElementById(
+                                                "photo-upload-input"
+                                            )
+                                            ?.click()
+                                    }
+                                    style={{
+                                        flexShrink: 0,
+                                        width: 100,
+                                        height: 100,
+                                        borderRadius: 8,
+                                        border: "2px dashed #d9d9d9",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        cursor: "pointer",
+                                        transition: "border-color 0.2s",
+                                        color: "#8c8c8c",
+                                        gap: 4,
+                                    }}
+                                    onMouseEnter={(e) =>
+                                    (e.currentTarget.style.borderColor =
+                                        "#1677ff")
+                                    }
+                                    onMouseLeave={(e) =>
+                                    (e.currentTarget.style.borderColor =
+                                        "#d9d9d9")
+                                    }
+                                >
+                                    <PlusOutlined style={{ fontSize: 20 }} />
+                                    <span style={{ fontSize: 11 }}>Add</span>
                                 </div>
                             )}
-                        </Upload>
+                        </div>
                     </div>
                 )}
 

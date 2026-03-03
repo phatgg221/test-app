@@ -21,6 +21,7 @@ import {
     PictureOutlined,
 } from "@ant-design/icons";
 import { type Post } from "@/context/MainPageContext";
+import { useMainPage } from "@/context/MainPageContext";
 import { formatDistanceToNow } from "date-fns";
 
 const { Text, Paragraph, Title } = Typography;
@@ -28,38 +29,23 @@ const { Text, Paragraph, Title } = Typography;
 interface PhotoOverlayProps {
     post: Post;
     onClose: () => void;
-    onCommentAdded: () => void;
 }
 
-const PhotoOverlay = ({ post, onClose, onCommentAdded }: PhotoOverlayProps) => {
+const PhotoOverlay = ({ post, onClose }: PhotoOverlayProps) => {
+    const { addComment, commentSubmitting } = useMainPage();
     const [commentText, setCommentText] = useState("");
-    const [submitting, setSubmitting] = useState(false);
 
     const handleAddComment = async () => {
         if (!commentText.trim()) return;
 
-        setSubmitting(true);
         try {
-            const res = await fetch(`/api/post/${post.id}/comment`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    content: commentText.trim(),
-                    authorId: "demo-user", // TODO: replace with real auth
-                }),
-            });
-
-            if (!res.ok) {
-                throw new Error("Failed to add comment");
+            const success = await addComment(post.id, commentText.trim());
+            if (success) {
+                setCommentText("");
+                message.success("Comment added!");
             }
-
-            setCommentText("");
-            onCommentAdded();
-            message.success("Comment added!");
         } catch {
             message.error("Couldn't post comment.");
-        } finally {
-            setSubmitting(false);
         }
     };
 
@@ -120,7 +106,9 @@ const PhotoOverlay = ({ post, onClose, onCommentAdded }: PhotoOverlayProps) => {
                                     >
                                         <Image
                                             src={photo.url}
-                                            alt={post.caption || "Post photo"}
+                                            alt={
+                                                post.caption || "Post photo"
+                                            }
                                             style={{
                                                 maxHeight: 480,
                                                 objectFit: "contain",
@@ -156,19 +144,33 @@ const PhotoOverlay = ({ post, onClose, onCommentAdded }: PhotoOverlayProps) => {
             {/* Post info */}
             <div style={{ padding: "20px 24px" }}>
                 {/* Author + timestamp */}
-                <Space align="center" size={12} style={{ marginBottom: 12 }}>
+                <Space
+                    align="center"
+                    size={12}
+                    style={{ marginBottom: 12 }}
+                >
                     <Avatar
                         size={36}
                         src={post.author.avatar}
-                        icon={!post.author.avatar && <UserOutlined />}
+                        icon={
+                            !post.author.avatar && <UserOutlined />
+                        }
                     />
                     <div>
-                        <Text strong>{post.author.name || "Anonymous"}</Text>
+                        <Text strong>
+                            {post.author.name || "Anonymous"}
+                        </Text>
                         <br />
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                            {formatDistanceToNow(new Date(post.createdAt), {
-                                addSuffix: true,
-                            })}
+                        <Text
+                            type="secondary"
+                            style={{ fontSize: 12 }}
+                        >
+                            {formatDistanceToNow(
+                                new Date(post.createdAt),
+                                {
+                                    addSuffix: true,
+                                }
+                            )}
                         </Text>
                     </div>
                 </Space>
@@ -204,7 +206,8 @@ const PhotoOverlay = ({ post, onClose, onCommentAdded }: PhotoOverlayProps) => {
                                             size={28}
                                             src={comment.author.avatar}
                                             icon={
-                                                !comment.author.avatar && (
+                                                !comment.author
+                                                    .avatar && (
                                                     <UserOutlined />
                                                 )
                                             }
@@ -214,26 +217,38 @@ const PhotoOverlay = ({ post, onClose, onCommentAdded }: PhotoOverlayProps) => {
                                         <Space size={8}>
                                             <Text
                                                 strong
-                                                style={{ fontSize: 13 }}
+                                                style={{
+                                                    fontSize: 13,
+                                                }}
                                             >
-                                                {comment.author.name ||
+                                                {comment.author
+                                                    .name ||
                                                     "Anonymous"}
                                             </Text>
                                             <Text
                                                 type="secondary"
-                                                style={{ fontSize: 11 }}
+                                                style={{
+                                                    fontSize: 11,
+                                                }}
                                             >
                                                 {formatDistanceToNow(
                                                     new Date(
                                                         comment.createdAt
                                                     ),
-                                                    { addSuffix: true }
+                                                    {
+                                                        addSuffix:
+                                                            true,
+                                                    }
                                                 )}
                                             </Text>
                                         </Space>
                                     }
                                     description={
-                                        <Text style={{ fontSize: 13 }}>
+                                        <Text
+                                            style={{
+                                                fontSize: 13,
+                                            }}
+                                        >
                                             {comment.content}
                                         </Text>
                                     }
@@ -260,17 +275,19 @@ const PhotoOverlay = ({ post, onClose, onCommentAdded }: PhotoOverlayProps) => {
                 >
                     <Input
                         value={commentText}
-                        onChange={(e) => setCommentText(e.target.value)}
+                        onChange={(e) =>
+                            setCommentText(e.target.value)
+                        }
                         placeholder="Add a comment…"
                         maxLength={500}
                         onPressEnter={handleAddComment}
-                        disabled={submitting}
+                        disabled={commentSubmitting}
                     />
                     <Button
                         type="primary"
                         icon={<SendOutlined />}
                         onClick={handleAddComment}
-                        loading={submitting}
+                        loading={commentSubmitting}
                         disabled={!commentText.trim()}
                     />
                 </Space.Compact>

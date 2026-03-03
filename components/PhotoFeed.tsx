@@ -1,24 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import { Row, Col, Empty, Skeleton, Card } from "antd";
 import { PictureOutlined } from "@ant-design/icons";
-import { type Post } from "@/context/MainPageContext";
+import { useMainPage } from "@/context/MainPageContext";
 import PhotoCard from "./PhotoCard";
 import PhotoOverlay from "./PhotoOverlay";
 
-interface PhotoFeedProps {
-    posts: Post[];
-    loading: boolean;
-    onCommentAdded: () => void;
-}
+const PhotoFeed = () => {
+    const {
+        posts,
+        loading,
+        selectedPost,
+        selectPost,
+        clearSelectedPost,
+    } = useMainPage();
 
-const PhotoFeed = ({ posts, loading, onCommentAdded }: PhotoFeedProps) => {
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-
-    const selectedPost = posts.find((p) => p.id === selectedId) || null;
-
-    if (loading) {
+    if (loading && posts.length === 0) {
         return (
             <Row gutter={[24, 24]}>
                 {[...Array(6)].map((_, i) => (
@@ -65,7 +62,7 @@ const PhotoFeed = ({ posts, loading, onCommentAdded }: PhotoFeedProps) => {
                     <Col key={post.id} xs={24} sm={12} lg={8}>
                         <PhotoCard
                             post={post}
-                            onClick={() => setSelectedId(post.id)}
+                            onClick={() => selectPost(post.id)}
                             index={i}
                         />
                     </Col>
@@ -75,8 +72,7 @@ const PhotoFeed = ({ posts, loading, onCommentAdded }: PhotoFeedProps) => {
             {selectedPost && (
                 <PhotoOverlay
                     post={selectedPost}
-                    onClose={() => setSelectedId(null)}
-                    onCommentAdded={onCommentAdded}
+                    onClose={clearSelectedPost}
                 />
             )}
         </>

@@ -3,7 +3,7 @@
 import { Typography, Button, Alert, Space } from "antd";
 import { ReloadOutlined } from "@ant-design/icons";
 import { MainPageProvider, useMainPage } from "@/context/MainPageContext";
-import Header from "@/components/header";
+import { CreatePostProvider } from "@/context/CreatePostContext";
 import UploadForm from "@/components/UploadForm";
 import PhotoFeed from "@/components/PhotoFeed";
 
@@ -18,12 +18,10 @@ export default function Page() {
 }
 
 function MainPageContent() {
-  const { posts, loading, error, hasMore, loadMore, refreshPosts } =
-    useMainPage();
+  const { error, hasMore, loading, loadMore, refreshPosts } = useMainPage();
 
   return (
     <div style={{ minHeight: "100vh", background: "#f5f5f5" }}>
-
       <main
         style={{
           maxWidth: 960,
@@ -36,15 +34,14 @@ function MainPageContent() {
           size="large"
           style={{ width: "100%" }}
         >
-          {/* Upload form */}
-          <UploadForm onUploadSuccess={refreshPosts} />
+          {/* Upload form — wrapped in its own context */}
+          <CreatePostProvider onPostCreated={refreshPosts}>
+            <UploadForm />
+          </CreatePostProvider>
 
           {/* Feed section */}
           <section>
-            <Title
-              level={4}
-              style={{ marginBottom: 20 }}
-            >
+            <Title level={4} style={{ marginBottom: 20 }}>
               Photo Feed
             </Title>
 
@@ -67,11 +64,7 @@ function MainPageContent() {
               />
             )}
 
-            <PhotoFeed
-              posts={posts}
-              loading={loading && posts.length === 0}
-              onCommentAdded={refreshPosts}
-            />
+            <PhotoFeed />
 
             {hasMore && (
               <div
