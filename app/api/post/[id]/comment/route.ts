@@ -1,18 +1,19 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthUser } from "@/lib/auth";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
-/**
- * POST /api/post/[id]/comment
- * Add a comment to a post.
- * Body: { content: string, authorId: string }
- */
 export async function POST(request: NextRequest, { params }: RouteParams) {
     try {
+        const authUser = await getAuthUser(request);
+        if (!authUser) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const { id: postId } = await params;
         const body = await request.json();
-        const { content, authorId } = body;
+        const { content } = body;
 
         if (!content || !content.trim()) {
             return NextResponse.json(
@@ -21,12 +22,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             );
         }
 
-        if (!authorId) {
-            return NextResponse.json(
-                { error: "authorId is required" },
-                { status: 400 }
-            );
-        }
+        const authorId = authUser.id as string;
 
         // Verify the post exists
         const post = await prisma.post.findUnique({
@@ -36,18 +32,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         if (!post) {
             return NextResponse.json(
                 { error: "Post not found" },
-                { status: 404 }
-            );
-        }
-
-        // Verify the author exists
-        const author = await prisma.user.findUnique({
-            where: { id: authorId },
-        });
-
-        if (!author) {
-            return NextResponse.json(
-                { error: "Author not found" },
                 { status: 404 }
             );
         }
@@ -79,10 +63,6 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 }
 
-/**
- * GET /api/post/[id]/comment
- * Get all comments for a post.
- */
 export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
         const { id: postId } = await params;

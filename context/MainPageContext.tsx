@@ -9,7 +9,6 @@ import {
 } from "react";
 import { useAuth } from "./AuthContext";
 
-// ─── Types ───────────────────────────────────────────────────────
 
 interface Author {
     id: string;
@@ -104,7 +103,7 @@ export function MainPageProvider({
 }: {
     children: React.ReactNode;
 }) {
-    const { user } = useAuth();
+    const { user, token } = useAuth();
 
     const [posts, setPosts] = useState<Post[]>([]);
     const [loading, setLoading] = useState(true);
@@ -173,7 +172,7 @@ export function MainPageProvider({
     const isPostOwner = useCallback(
         (post: Post): boolean => {
             if (!user) return false;
-            return post.author.email === user.email;
+            return post.authorId === user.id;
         },
         [user]
     );
@@ -185,6 +184,7 @@ export function MainPageProvider({
             caption: string,
             photos: EditablePhoto[]
         ): Promise<boolean> => {
+            if (!token) return false;
             try {
                 const newFiles = photos.filter((p) => p.file);
                 let newUrls: string[] = [];
@@ -197,6 +197,9 @@ export function MainPageProvider({
 
                     const uploadRes = await fetch("/api/post/upload", {
                         method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
                         body: formData,
                     });
 
@@ -219,7 +222,10 @@ export function MainPageProvider({
 
                 const res = await fetch(`/api/post/${postId}`, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
                     body: JSON.stringify({
                         caption,
                         photos: finalPhotos.map((p, idx) => ({
@@ -230,7 +236,8 @@ export function MainPageProvider({
                 });
 
                 if (!res.ok) {
-                    throw new Error("Failed to update post");
+                    const err = await res.json();
+                    throw new Error(err.error || "Failed to update post");
                 }
 
                 const json = await res.json();
@@ -249,20 +256,25 @@ export function MainPageProvider({
                 throw err instanceof Error ? err : new Error("Couldn't update post.");
             }
         },
-        []
+        [token]
     );
 
     // ── Delete post ─────────────────────────────────────────────
 
     const deletePost = useCallback(
         async (postId: string): Promise<boolean> => {
+            if (!token) return false;
             try {
                 const res = await fetch(`/api/post/${postId}`, {
                     method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
                 });
 
                 if (!res.ok) {
-                    throw new Error("Failed to delete post");
+                    const err = await res.json();
+                    throw new Error(err.error || "Failed to delete post");
                 }
 
                 setPosts((prev) => prev.filter((p) => p.id !== postId));
@@ -270,31 +282,34 @@ export function MainPageProvider({
                 setSelectedId((prev) => (prev === postId ? null : prev));
 
                 return true;
-            } catch {
-                throw new Error("Couldn't delete post.");
+            } catch (err) {
+                throw err instanceof Error ? err : new Error("Couldn't delete post.");
             }
         },
-        []
+        [token]
     );
 
 
     const addComment = useCallback(
         async (postId: string, content: string): Promise<boolean> => {
-            if (!content.trim() || !user) return false;
+            if (!content.trim() || !user || !token) return false;
 
             setCommentSubmitting(true);
             try {
                 const res = await fetch(`/api/post/${postId}/comment`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
                     body: JSON.stringify({
                         content: content.trim(),
-                        authorId: user.id,
                     }),
                 });
 
                 if (!res.ok) {
-                    throw new Error("Failed to add comment");
+                    const err = await res.json();
+                    throw new Error(err.error || "Failed to add comment");
                 }
 
                 const json = await res.json();
@@ -316,13 +331,13 @@ export function MainPageProvider({
                 );
 
                 return true;
-            } catch {
-                throw new Error("Couldn't post comment.");
+            } catch (err) {
+                throw err instanceof Error ? err : new Error("Couldn't post comment.");
             } finally {
                 setCommentSubmitting(false);
             }
         },
-        [user]
+        [user, token]
     );
 
     useEffect(() => {

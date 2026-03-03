@@ -1,11 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
-/**
- * POST /api/auth/login
- * Simple login by email (no password hashing for now — add bcrypt later).
- * Body: { email: string, password: string }
- */
+
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
@@ -35,8 +31,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // TODO: Add proper password verification with bcrypt
-        // For now, we just check if the user exists
 
         return NextResponse.json({ data: user });
     } catch (error) {

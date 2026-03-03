@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
-
+import { getAuthUser } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
     try {
@@ -68,33 +68,16 @@ export async function GET(request: NextRequest) {
     }
 }
 
-/**
- * POST /api/post
- * Create a new post with optional photos.
- * Body: { authorId: string, caption?: string, photos?: { url: string, order?: number }[] }
- */
 export async function POST(request: NextRequest) {
     try {
-        const body = await request.json();
-        const { authorId, caption, photos } = body;
-
-        if (!authorId) {
-            return NextResponse.json(
-                { error: "authorId is required" },
-                { status: 400 }
-            );
+        const authUser = await getAuthUser(request);
+        if (!authUser) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Upsert: create the user if they don't exist (for dev convenience)
-        await prisma.user.upsert({
-            where: { id: authorId },
-            update: {},
-            create: {
-                id: authorId,
-                email: `${authorId}@demo.local`,
-                name: "Demo User",
-            },
-        });
+        const body = await request.json();
+        const { caption, photos } = body;
+        const authorId = authUser.id as string;
 
         const post = await prisma.post.create({
             data: {
@@ -128,6 +111,7 @@ export async function POST(request: NextRequest) {
                     orderBy: { order: "asc" },
                 },
                 comments: true,
+                _count: { select: { comments: true } },
             },
         });
 

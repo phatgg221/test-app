@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadToS3 } from "@/utils/s3";
+import { getAuthUser } from "@/lib/auth";
 import path from "path";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -7,6 +8,11 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file
 
 export async function POST(request: NextRequest) {
     try {
+        const authUser = await getAuthUser(request);
+        if (!authUser) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const formData = await request.formData();
         const files = formData.getAll("files") as File[];
 
@@ -44,7 +50,6 @@ export async function POST(request: NextRequest) {
             const bytes = await file.arrayBuffer();
             const buffer = Buffer.from(bytes);
 
-            // Generate unique S3 key: posts/timestamp-randomstring.ext
             const ext = path.extname(file.name) || `.${file.type.split("/")[1]}`;
             const uniqueName = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}${ext}`;
             const s3Key = `posts/${uniqueName}`;

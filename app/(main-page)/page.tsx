@@ -34,12 +34,10 @@ function MainPageContent() {
           size="large"
           style={{ width: "100%" }}
         >
-          {/* Upload form — wrapped in its own context */}
           <CreatePostProvider onPostCreated={refreshPosts}>
             <UploadForm />
           </CreatePostProvider>
 
-          {/* Feed section */}
           <section>
             <Title level={4} style={{ marginBottom: 20 }}>
               Photo Feed

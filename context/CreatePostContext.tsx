@@ -9,7 +9,6 @@ import {
 import type { UploadFile } from "antd";
 import { useAuth } from "./AuthContext";
 
-// ─── Types ───────────────────────────────────────────────────────
 
 interface CreatePostContextType {
     // Modal state
@@ -33,11 +32,9 @@ interface CreatePostContextType {
     submitPost: () => Promise<boolean>; // returns true on success
 }
 
-// ─── Context ─────────────────────────────────────────────────────
 
 const CreatePostContext = createContext<CreatePostContextType | null>(null);
 
-// ─── Provider ────────────────────────────────────────────────────
 
 export function CreatePostProvider({
     children,
@@ -46,7 +43,7 @@ export function CreatePostProvider({
     children: React.ReactNode;
     onPostCreated?: () => void;
 }) {
-    const { user, isAuthenticated } = useAuth();
+    const { user, token, isAuthenticated } = useAuth();
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,7 +56,6 @@ export function CreatePostProvider({
 
     const canPost = caption.trim().length > 0 || fileList.length > 0;
 
-    // ── Actions ──────────────────────────────────────────────────
 
     const openModal = useCallback((): boolean => {
         if (!isAuthenticated) return false;
@@ -91,7 +87,7 @@ export function CreatePostProvider({
     }, []);
 
     const submitPost = useCallback(async (): Promise<boolean> => {
-        if (!canPost || !user) return false;
+        if (!canPost || !user || !token) return false;
 
         setSubmitting(true);
 
@@ -109,6 +105,9 @@ export function CreatePostProvider({
 
                 const uploadRes = await fetch("/api/post/upload", {
                     method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                     body: formData,
                 });
 
@@ -124,9 +123,11 @@ export function CreatePostProvider({
             // Step 2: Create post
             const postRes = await fetch("/api/post", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
                 body: JSON.stringify({
-                    authorId: user.id,
                     caption: caption.trim() || undefined,
                     photos: photoUrls.map((url, idx) => ({ url, order: idx })),
                 }),
@@ -152,7 +153,7 @@ export function CreatePostProvider({
         } finally {
             setSubmitting(false);
         }
-    }, [canPost, user, fileList, caption, onPostCreated]);
+    }, [canPost, user, token, fileList, caption, onPostCreated]);
 
     return (
         <CreatePostContext.Provider

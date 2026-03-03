@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthUser } from "@/lib/auth";
 
 type RouteParams = { params: Promise<{ id: string }> };
-
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
     try {
@@ -57,19 +57,25 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 }
 
-
 export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
+        const authUser = await getAuthUser(request);
+        if (!authUser) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const { id } = await params;
         const body = await request.json();
         const { caption, photos } = body;
 
         const existing = await prisma.post.findUnique({ where: { id } });
         if (!existing) {
-            return NextResponse.json(
-                { error: "Post not found" },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: "Post not found" }, { status: 404 });
+        }
+
+        // Ownership check
+        if (existing.authorId !== authUser.id) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         const post = await prisma.$transaction(async (tx) => {
@@ -119,6 +125,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
                             },
                         },
                     },
+                    _count: { select: { comments: true } },
                 },
             });
         });
@@ -133,20 +140,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 }
 
-/**
- * DELETE /api/post/[id]
- * Delete a post and all its related photos & comments (via cascade).
- */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
+        const authUser = await getAuthUser(request);
+        if (!authUser) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const { id } = await params;
 
         const existing = await prisma.post.findUnique({ where: { id } });
         if (!existing) {
-            return NextResponse.json(
-                { error: "Post not found" },
-                { status: 404 }
-            );
+            return NextResponse.json({ error: "Post not found" }, { status: 404 });
+        }
+
+        // Ownership check
+        if (existing.authorId !== authUser.id) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         await prisma.post.delete({ where: { id } });
