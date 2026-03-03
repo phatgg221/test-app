@@ -85,17 +85,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Verify the author exists
-        const author = await prisma.user.findUnique({
+        // Upsert: create the user if they don't exist (for dev convenience)
+        await prisma.user.upsert({
             where: { id: authorId },
+            update: {},
+            create: {
+                id: authorId,
+                email: `${authorId}@demo.local`,
+                name: "Demo User",
+            },
         });
-
-        if (!author) {
-            return NextResponse.json(
-                { error: "Author not found" },
-                { status: 404 }
-            );
-        }
 
         const post = await prisma.post.create({
             data: {
