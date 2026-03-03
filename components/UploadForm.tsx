@@ -211,21 +211,9 @@ const UploadForm = () => {
                             {user?.name || "User"}
                         </Text>
                         <br />
-                        <Text
-                            type="secondary"
-                            style={{
-                                fontSize: 12,
-                                background: "#e4e6e9",
-                                padding: "1px 8px",
-                                borderRadius: 4,
-                            }}
-                        >
-                            🌐 Public
-                        </Text>
                     </div>
                 </div>
 
-                {/* Caption textarea */}
                 <TextArea
                     autoFocus
                     value={caption}
