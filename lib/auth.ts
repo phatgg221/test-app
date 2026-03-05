@@ -22,9 +22,6 @@ export async function verifyToken(token: string) {
     }
 }
 
-/**
- * Get the user from the Authorization header
- */
 export async function getAuthUser(request: NextRequest) {
     const authHeader = request.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {

@@ -59,7 +59,6 @@ const PhotoOverlay = ({ post, onClose }: PhotoOverlayProps) => {
     const [editPhotos, setEditPhotos] = useState<EditablePhoto[]>([]);
     const [saving, setSaving] = useState(false);
 
-    // Sync edit state when post changes or entering edit mode
     useEffect(() => {
         if (editing) {
             setEditCaption(post.caption || "");
@@ -162,9 +161,7 @@ const PhotoOverlay = ({ post, onClose }: PhotoOverlayProps) => {
                 body: { padding: 0 },
             }}
         >
-            {/* Photo Section — Read-only Carousel or Edit Grid */}
             {!editing ? (
-                /* ── Read-only Carousel ── */
                 post.photos.length > 0 ? (
                     <div style={{ background: "#000", borderRadius: "8px 8px 0 0" }}>
                         {post.photos.length === 1 ? (
@@ -252,7 +249,6 @@ const PhotoOverlay = ({ post, onClose }: PhotoOverlayProps) => {
 
             {/* Post info */}
             <div style={{ padding: "20px 24px" }}>
-                {/* Author + timestamp + actions */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                     <Space align="center" size={12}>
                         <Avatar

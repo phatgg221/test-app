@@ -146,6 +146,7 @@ const UploadForm = () => {
                             }
                             onClick={handleOpenWithPhotos}
                             style={{
+                                width: "100%",
                                 fontWeight: 600,
                                 color: "#65676b",
                                 display: "flex",
