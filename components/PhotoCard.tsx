@@ -78,12 +78,18 @@ const PhotoCard = ({ post, onClick, index }: PhotoCardProps) => {
                 }}
             >
                 {post.caption && (
-                    <Text
-                        ellipsis={{ tooltip: post.caption }}
-                        style={{ display: "block", marginBottom: 8 }}
-                    >
-                        {post.caption}
-                    </Text>
+                    <div
+                        className="caption-html"
+                        style={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            marginBottom: 8,
+                            fontSize: 14,
+                        }}
+                        dangerouslySetInnerHTML={{ __html: post.caption }}
+                    />
                 )}
 
                 <div style={{ marginTop: "auto" }}>

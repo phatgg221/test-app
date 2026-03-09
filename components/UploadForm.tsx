@@ -1,8 +1,8 @@
 "use client";
 
+import React from "react";
 import {
     Button,
-    Input,
     Modal,
     Typography,
     Space,
@@ -20,8 +20,8 @@ import {
 } from "@ant-design/icons";
 import { useAuth } from "@/context/AuthContext";
 import { useCreatePost } from "@/context/CreatePostContext";
+import EditableTextArea from "@/components/EditableTextArea";
 
-const { TextArea } = Input;
 const { Text, Title } = Typography;
 
 const UploadForm = () => {
@@ -215,19 +215,10 @@ const UploadForm = () => {
                     </div>
                 </div>
 
-                <TextArea
-                    autoFocus
+                <EditableTextArea
                     value={caption}
-                    onChange={(e) => setCaption(e.target.value)}
+                    onChange={setCaption}
                     placeholder={`What's on your mind, ${user?.name || "User"}?`}
-                    autoSize={{ minRows: 3, maxRows: 8 }}
-                    maxLength={2000}
-                    variant="borderless"
-                    style={{
-                        fontSize: 16,
-                        padding: "8px 0",
-                        resize: "none",
-                    }}
                 />
 
                 {/* Upload area */}

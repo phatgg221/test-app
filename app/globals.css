@@ -36,3 +36,50 @@ body {
     transform: translateY(0);
   }
 }
+
+/* contentEditable placeholder */
+[contenteditable][data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: #bfbfbf;
+  pointer-events: none;
+}
+
+/* Basic rich-text caption styles */
+.caption-html b,
+.caption-html strong {
+  font-weight: 700;
+}
+.caption-html i,
+.caption-html em {
+  font-style: italic;
+}
+.caption-html u {
+  text-decoration: underline;
+}
+.caption-html s,
+.caption-html strike {
+  text-decoration: line-through;
+}
+
+/* ── Checklist (macOS-style) ── */
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.checklist-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  accent-color: #1677ff;
+  cursor: pointer;
+  flex-shrink: 0;
+  appearance: auto;
+}
+
+.checklist-item input[type="checkbox"]:checked + span {
+  text-decoration: line-through;
+  color: #8c8c8c;
+}

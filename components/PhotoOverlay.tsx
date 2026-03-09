@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Modal,
     Image,
@@ -15,7 +15,6 @@ import {
     Divider,
     Popconfirm,
     Dropdown,
-    Tooltip,
 } from "antd";
 import {
     CloseOutlined,
@@ -32,6 +31,7 @@ import {
 import { type Post, type EditablePhoto } from "@/context/MainPageContext";
 import { useMainPage } from "@/context/MainPageContext";
 import { formatDistanceToNow } from "date-fns";
+import EditableTextArea from "@/components/EditableTextArea";
 
 const { Text, Paragraph, Title } = Typography;
 const { TextArea } = Input;
@@ -280,15 +280,17 @@ const PhotoOverlay = ({ post, onClose }: PhotoOverlayProps) => {
                 {/* Caption — editable or read-only */}
                 {editing ? (
                     <div style={{ marginBottom: 16 }}>
-                        <TextArea
-                            autoFocus
+                        <EditableTextArea
                             value={editCaption}
-                            onChange={(e) => setEditCaption(e.target.value)}
-                            autoSize={{ minRows: 2, maxRows: 6 }}
-                            maxLength={2000}
-                            style={{ marginBottom: 12, fontSize: 15 }}
+                            onChange={setEditCaption}
+                            initialHtml={editCaption}
                             placeholder="Add a caption..."
+                            fontSize={15}
+                            minHeight={60}
+                            bordered
+                            style={{ marginBottom: 12 }}
                         />
+
                         <Space size="middle">
                             <Button
                                 type="primary"
@@ -311,9 +313,11 @@ const PhotoOverlay = ({ post, onClose }: PhotoOverlayProps) => {
                     </div>
                 ) : (
                     post.caption && (
-                        <Paragraph style={{ marginBottom: 16, fontSize: 15 }}>
-                            {post.caption}
-                        </Paragraph>
+                        <div
+                            className="caption-html"
+                            style={{ marginBottom: 16, fontSize: 15 }}
+                            dangerouslySetInnerHTML={{ __html: post.caption }}
+                        />
                     )
                 )}
 
